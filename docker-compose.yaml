@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:8.0
+    container_name: event_mongodb
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
+    ports:
+      - "${MONGODB_PORT}:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - event-network
+
+  # Flask Backend API
+  backend:
+    image: stefantagarski/event-service-backend:1.0
+    container_name: event_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - FLASK_ENV=${FLASK_ENV}
+      - MONGO_HOST=${MONGO_HOST}
+      - MONGO_PORT=${MONGO_PORT}
+      - MONGO_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+      - DATABASE_NAME=${DATABASE_NAME}
+      - SECRET_KEY=${SECRET_KEY}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+    ports:
+      - "${BACKEND_PORT}:5000"
+    depends_on:
+      - mongodb
+    networks:
+      - event-network
+
+  # Streamlit Frontend
+  frontend:
+    image: stefantagarski/event-service-frontend:1.0
+    container_name: event_frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - API_BASE_URL=${API_BASE_URL}
+      - BACKEND_URL=${BACKEND_URL}
+    ports:
+      - "${FRONTEND_PORT}:8501"
+    depends_on:
+      - backend
+    networks:
+      - event-network
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  event-network:
+    driver: bridge
