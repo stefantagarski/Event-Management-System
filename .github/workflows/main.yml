@@ -2,9 +2,9 @@ name: Event Management System CI/CD
 
 on:
   push:
-    branches: [main, develop]
+    branches: [ main, develop ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 env:
   REGISTRY: docker.io
@@ -53,10 +53,25 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
+            # Install Docker if not installed
+            if ! command -v docker &> /dev/null; then
+              sudo apt-get update
+              sudo apt-get install -y docker.io docker-compose
+              sudo systemctl start docker
+              sudo systemctl enable docker
+              sudo usermod -aG docker $USER
+            fi
+            
+            # Create project directory if it doesn't exist
+            mkdir -p ~/event-management-system
             cd ~/event-management-system
             
-            # Pull the latest code from the repository
-            git pull origin main
+            # Clone repository if it doesn't exist or pull latest changes
+            if [ ! -d .git ]; then
+              git clone https://github.com/yourusername/your-repo-name.git .
+            else
+              git pull origin main
+            fi
             
             # Create environment file
             cat > .env << EOF
@@ -67,30 +82,26 @@ jobs:
             MONGO_HOST=mongodb
             MONGO_PORT=27017
             DATABASE_NAME=eventdb
-
+            
             # Flask Backend Configuration
             FLASK_ENV=production
             SECRET_KEY=${{ secrets.SECRET_KEY }}
             CORS_ORIGINS=*
-
+            
             # API Configuration
             API_BASE_URL=http://backend:5000/api
             BACKEND_URL=http://backend:5000
-
+            
             # Port Configuration
             MONGODB_PORT=27017
             BACKEND_PORT=5000
             FRONTEND_PORT=8501
             EOF
             
-            # Update docker-compose.yaml to use the pre-built images
-            sed -i 's|build:|image: ${{ env.BACKEND_IMAGE }}:1.0\n    #build:|g' docker-compose.yaml
-            sed -i 's|context: ./frontend|image: ${{ env.FRONTEND_IMAGE }}:1.0\n    #context: ./frontend|g' docker-compose.yaml
-            
             # Deploy with the images
-            docker compose pull
-            docker compose down
-            docker compose up -d
+            docker-compose pull
+            docker-compose down
+            docker-compose up -d
             
             # Cleanup
             docker image prune -f
