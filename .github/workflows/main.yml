@@ -10,7 +10,7 @@ env:
   REGISTRY: docker.io
   BACKEND_IMAGE: stefantagarski/event-backend
   FRONTEND_IMAGE: stefantagarski/event-frontend
-  IMAGE_TAG: "1.0" # Static tag for Docker images
+  IMAGE_TAG: "2.0" # Static tag for Docker images
 
 jobs:
   build:
@@ -47,7 +47,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          source: "docker-compose.yaml,mongo-init/"
+          source: "docker-compose.yaml/"
           target: "~/event-management-system"
 
       - name: Deploy to EC2
