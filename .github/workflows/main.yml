@@ -47,7 +47,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          source: "docker-compose.yaml/"
+          source: "docker-compose.yaml,mongo-init/"
           target: "~/event-management-system"
 
       - name: Deploy to EC2
